@@ -23,8 +23,7 @@ The project is an animated, audio-visual piece inspired by Edvard Munch’s *The
       - High Frequencies: Control the screamer’s mouth size, making it appear to “scream” in response to the music.
 
 **Dynamic Colour Adjustments Based on Frequency**
-   - Added cumulative colour variables that incrementally change based on bass frequency, creating a pulsing effect.
-   - Adjusted colours every 500ms based on bass levels, increasing red while reducing green and blue.
+   - Added cumulative colour variables that incrementally change based on bass frequency, increasing red while reducing green and blue.
    - Reset colour adjustments after the music stops for a visual reset on each replay.
 
 **Opacity and Movement Linked to Volume**
