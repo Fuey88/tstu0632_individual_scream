@@ -8,7 +8,7 @@ The project is an animated, audio-visual piece inspired by Edvard Munch’s *The
 - Removed the mirroring effect to enhance the feeling of isolation.
 
 **Fixed Resizing Issues**
-Removed issues with resizing from the group project
+- Removed issues with resizing from the group project
 
 **Integrated Audio**
    - Loaded an mp3 file and added variables to control volume and frequency.
