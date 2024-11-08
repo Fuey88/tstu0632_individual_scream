@@ -12,12 +12,11 @@ let playText = "CLICK TO BEGIN MUSIC"; // text to display
 let smoothedVolume = 0; // initialise smoothed volume level to prevent flickering
 let smoothedSpeed = 1; // smoothing speed factor for circles
 let smoothedMouthSize = 1; // smoothing scale factor for screaming mouth
-let redIncrementValue = 0.2;  // increment amount for red value
-let greenDecrementValue = 0.4; // decrement amount for green value
-let blueDecrementValue = 0.2; // tecrement amount for blue value
+let redIncrementValue = 0.3;  // increment amount for red value
+let greenDecrementValue = 0.3; // decrement amount for green value
+let blueDecrementValue = 0.4; // tecrement amount for blue value
 let colorAdjustmentTimer = 0; // timer to control frequency of colour adjustments
-let redIncrementTimer = 0; // timer tracking when to increment red value
-let maxRedValue = 200; // max red value
+
 
 // global variables for cumulative colour adjustments based on frequency
 let cumulativeRed = 0;
@@ -77,38 +76,38 @@ function draw() {
     text(playText, width / 2, 50); // Position text at the top center
   }
 
-
   // increase red colour every second if music is playing
-  // Inside draw, replace existing red increment logic with the following
   if (isPlaying) {
-    colorAdjustmentTimer += deltaTime;
-  
-    if (colorAdjustmentTimer >= 500) { // Adjusts every 500ms
-      let lowFreq = fft.getEnergy("bass");
-  
-      // Increment or decrement based on frequency energy
+    colorAdjustmentTimer += deltaTime; // increment timer for colour adjustments - p5 function from p5js.org
+
+    if (colorAdjustmentTimer >= 500) { // adjust colour every 500ms
+      let lowFreq = fft.getEnergy("bass"); // get bass frequency energy - getEnergy function on p5js.org
+
+      // increment or decrement colours based on bass frequency energy
       if (lowFreq > 150) {
-        cumulativeRed = min(cumulativeRed + redIncrementValue, 255);
+        cumulativeRed = constrain(cumulativeRed + redIncrementValue, 0, 255); 
         cumulativeGreen = max(cumulativeGreen - greenDecrementValue, -255);
         cumulativeBlue = max(cumulativeBlue - blueDecrementValue, -255);
       }
-  
-      colorAdjustmentTimer = 0; // Reset timer
+
+      colorAdjustmentTimer = 0; // reset timer
     }
   }
 
-
   frameCounter++; // increment frame counter - used for changing colours
 
-  // music analysis 
+  // music analysis
   let volume = amplitude.getLevel(); // continuously gets the overall volume level
   smoothedVolume = lerp(smoothedVolume, volume, 0.1); // smooth volume level
   let spectrum = fft.analyze(); // gets an array of amplitude values across frequency spectrum
-  let lowFreq = fft.getEnergy("bass"); // Analyze low frequencies
-  let highFreq = fft.getEnergy("treble"); // and high frequencies
-  smoothedSpeed = lerp(smoothedSpeed, map(lowFreq, 0, 255, 2, 6), 0.1); // smooth circle speed change based on freq
-  smoothedMouthSize = lerp(smoothedMouthSize, map(highFreq, 0, 255, 1, 4), 0.1); //smooth mouth size change based on freq
+  let lowFreq = fft.getEnergy("bass"); // analyze low frequencies for circle speed
 
+  // adjust smoothed speed of circles based on bass frequency energy
+  smoothedSpeed = lerp(smoothedSpeed, map(lowFreq, 0, 255, 0, 8), 0.1);
+
+  // analyze frequency in upper range (around 5000 onwards) to adjust mouth size
+  let wailingEnergy = fft.getEnergy(7000, 10000); // get energy in high-pitch wailing range
+  smoothedMouthSize = lerp(smoothedMouthSize, map(wailingEnergy, 0, 255, 1, 4), 0.5); // smooth mouth size change based on wailing freq
 
   // move and draw circles for each shape
   moveAndDrawCircles(skyCircles, skyShape, skyColor, volume, spectrum);
@@ -120,12 +119,14 @@ function draw() {
   drawScreamer();
 }
 
+
 // initialises circles with customisable size and speed
 function initializeCircles(circles, shape, color, count, xSpeed, ySpeed, size) {
   for (let i = 0; i < count; i++) {
     let { x: xPos, y: yPos } = findRandomColorPosition(shape, color); // find random position in shape
     let initialColor = getCachedColor(screamImg, int(xPos), int(yPos)) || color(0); // fallback to black if undefined
-
+    
+    // push new circle to circles array
     circles.push({
       x: xPos,
       y: yPos,
@@ -147,12 +148,11 @@ function initializeCircles(circles, shape, color, count, xSpeed, ySpeed, size) {
 }
 
 // moves, fades, and draws circles based on shape
-// moves, fades, and draws circles based on shape
 function moveAndDrawCircles(circles, shape, shapeColor, volume, spectrum) {
   let buffer = 14; // allow circles to move slightly beyond the screen edges before resetting
 
   // volume controls opacity
-  let volumeMultiplier = map(smoothedVolume, 0, 0.2, 0, 1); // maps volume to opacity multiplier between 0 and 1 (higher = brighter)
+  let volumeMultiplier = map(smoothedVolume, 0, 0.25, 0, 1); // maps volume to opacity multiplier between 0 and 1 (higher = brighter)
 
   for (let i = 0; i < circles.length; i++) {
     let circle = circles[i];
@@ -199,11 +199,17 @@ function moveAndDrawCircles(circles, shape, shapeColor, volume, spectrum) {
       // Apply scale factor to circle size
       let scaleFactor = height / 812;
       
+      // adjust cumulativeRed for skyCircles to alter red effect
+      let redValue = circles === skyCircles ? 0.3 * cumulativeRed : cumulativeRed; // check if current array is sky, then assign new red value
+      // adjust green and blue values specifically for skyCircles
+      let greenValue = circles === skyCircles ? cumulativeGreen * 1: cumulativeGreen;
+      let blueValue = circles === skyCircles ? cumulativeBlue * 0.8 : cumulativeBlue;
+
       // Use baseColor with added values for fill
       fill(
-        constrain(red(circle.currentColor) + cumulativeRed, 0, 255),
-        constrain(green(circle.currentColor) + cumulativeGreen, 0, 255),
-        constrain(blue(circle.currentColor) + cumulativeBlue, 0, 255),
+        constrain(red(circle.currentColor) + redValue, 0, 220),
+        constrain(green(circle.currentColor) + greenValue, 0, 255),
+        constrain(blue(circle.currentColor) + blueValue, 0, 255),
         finalOpacity
       );
       noStroke();
@@ -223,7 +229,8 @@ function moveAndDrawCircles(circles, shape, shapeColor, volume, spectrum) {
 }
 
 
-// gets colour from cached pixel data
+
+// gets colour from cached pixel data (in image pixel array)
 function getCachedColor(image, x, y) {
   let index = (x + y * image.width) * 4; // calculate index in pixels array
   return color(image.pixels[index], image.pixels[index + 1], image.pixels[index + 2]); // return colour
@@ -231,7 +238,7 @@ function getCachedColor(image, x, y) {
 
 // finds a random position within the specified colour area
 function findRandomColorPosition(shape, color) {
-  let x, y;
+  let x,y;
   let attempts = 0;
   const maxAttempts = 1000;
 
@@ -240,7 +247,7 @@ function findRandomColorPosition(shape, color) {
     y = int(random(height)); // random y within canvas
     attempts++;
     if (attempts >= maxAttempts) {
-      console.error("max attempts reached. unable to find matching colour");
+      console.error("max attempts reached. unable to find matching colour"); //error check
       break;
     }
   } while (!isShapeColor(getCachedColor(shape, x, y), color));
@@ -249,7 +256,7 @@ function findRandomColorPosition(shape, color) {
 
 // checks if a pixel colour matches the specified shape colour
 function isShapeColor(pixelColor, shapeColor) {
-  return red(pixelColor) === red(shapeColor) &&
+  return red(pixelColor) === red(shapeColor) && 
          green(pixelColor) === green(shapeColor) &&
          blue(pixelColor) === blue(shapeColor);
 }
@@ -355,16 +362,29 @@ function drawScreamer() {
   );
   ellipse(290 * scaleFactor, 440 * scaleFactor, 10 * scaleFactor * smoothedMouthSize, 8 * scaleFactor * smoothedMouthSize); // left eye
   ellipse(325 * scaleFactor, 440 * scaleFactor, 10 * scaleFactor * smoothedMouthSize, 8 * scaleFactor * smoothedMouthSize); // right eye
-  stroke(70, 56, 45);
+  stroke(
+    constrain(70 + cumulativeRed, 0, 255),
+    constrain(56 + cumulativeGreen, 0, 255),
+    constrain(45 + cumulativeBlue, 0, 255)
+  ); // dynamic stroke colour for lips 
   strokeWeight(2);
   ellipse(308 * scaleFactor, 490 * scaleFactor, 13 * scaleFactor * smoothedMouthSize, 20 * scaleFactor * smoothedMouthSize); // mouth with expansion capability
+
+  // draw pupils - small black circles inside each eye
+noStroke();
+fill(0); // black color for pupils
+ellipse(290 * scaleFactor, 440 * scaleFactor, 3 * scaleFactor, 3 * scaleFactor); // left pupil
+ellipse(325 * scaleFactor, 440 * scaleFactor, 3 * scaleFactor, 3 * scaleFactor); // right pupil
+
 }
+
+
  
 // function to play music when the user clicks and only if music is not already playing
 function mousePressed() {
   if (!isPlaying) {
     scaryMusic.play();
-    scaryMusic.onended(() => {
+    scaryMusic.onended(() => { // onended is event listener - triggers when music finishes (from p5js.org)
       isPlaying = false;
       playText = "CLICK TO PLAY MUSIC"; // show text when music ends
       resetColorAdjustments(); // Reset colours when the music ends
