@@ -13,7 +13,7 @@ let smoothedVolume = 0; // initialise smoothed volume level to prevent flickerin
 let smoothedSpeed = 1; // smoothing speed factor for circles
 let smoothedMouthSize = 1; // smoothing scale factor for screaming mouth
 let redIncrementValue = 0.2;  // increment amount for red value
-let greenDecrementValue = 0.2; // decrement amount for green value
+let greenDecrementValue = 0.4; // decrement amount for green value
 let blueDecrementValue = 0.2; // tecrement amount for blue value
 let colorAdjustmentTimer = 0; // timer to control frequency of colour adjustments
 let redIncrementTimer = 0; // timer tracking when to increment red value
@@ -54,10 +54,10 @@ function setup() {
   boardwalkColor = color(153, 43, 0); // boardwalk colourx
 
   // initialise circles for each shape with speeds on x and y axis and customisable sizes
-  initializeCircles(skyCircles, skyShape, skyColor, 5000, 0.3, 0, 14); // sky circles
-  initializeCircles(waterCircles, waterShape, waterColor, 4000, 0.3, -0.03, 13); // water circles
-  initializeCircles(greenCircles, greenShape, greenColor, 3000, 0.3, -0.10, 12); // green circles
-  initializeCircles(boardwalkCircles, boardwalkShape, boardwalkColor, 7000, -0.2, -0.2, 11); // boardwalk circles
+  initializeCircles(skyCircles, skyShape, skyColor, 5000, 0.1, 0, 14); // sky circles
+  initializeCircles(waterCircles, waterShape, waterColor, 4000, 0.1, -0.02, 13); // water circles
+  initializeCircles(greenCircles, greenShape, greenColor, 3000, 0.1, -0.08, 12); // green circles
+  initializeCircles(boardwalkCircles, boardwalkShape, boardwalkColor, 7000, -0.1, -0.1, 11); // boardwalk circles
 
   // Set up text display for instructions
   textAlign(CENTER, CENTER);
@@ -106,7 +106,7 @@ function draw() {
   let spectrum = fft.analyze(); // gets an array of amplitude values across frequency spectrum
   let lowFreq = fft.getEnergy("bass"); // Analyze low frequencies
   let highFreq = fft.getEnergy("treble"); // and high frequencies
-  smoothedSpeed = lerp(smoothedSpeed, map(lowFreq, 0, 255, 1, 3), 0.1); // smooth circle speed change based on freq
+  smoothedSpeed = lerp(smoothedSpeed, map(lowFreq, 0, 255, 2, 6), 0.1); // smooth circle speed change based on freq
   smoothedMouthSize = lerp(smoothedMouthSize, map(highFreq, 0, 255, 1, 4), 0.1); //smooth mouth size change based on freq
 
 
@@ -147,12 +147,12 @@ function initializeCircles(circles, shape, color, count, xSpeed, ySpeed, size) {
 }
 
 // moves, fades, and draws circles based on shape
+// moves, fades, and draws circles based on shape
 function moveAndDrawCircles(circles, shape, shapeColor, volume, spectrum) {
   let buffer = 14; // allow circles to move slightly beyond the screen edges before resetting
 
   // volume controls opacity
-  let volumeMultiplier = map(smoothedVolume, 0, 0.3, 0, 1); // maps volume to opacity multiplier between 0 and 1 (higher = brighter)
-  // scales volume from range (1 is max volume) into an opacity range (255 is fully visible)
+  let volumeMultiplier = map(smoothedVolume, 0, 0.2, 0, 1); // maps volume to opacity multiplier between 0 and 1 (higher = brighter)
 
   for (let i = 0; i < circles.length; i++) {
     let circle = circles[i];
@@ -162,13 +162,10 @@ function moveAndDrawCircles(circles, shape, shapeColor, volume, spectrum) {
       circle.x += circle.xSpeed * smoothedSpeed; // apply smoothed speed to x position
       circle.y += circle.ySpeed * smoothedSpeed; // and y pos
 
-      // update colour every few frames
-      if (frameCounter % 5 === 0) {
-        let newTargetColor = getCachedColor(screamImg, int(circle.x), int(circle.y));
-        circle.targetColor = newTargetColor; // set new target colour
-      }
+      // Continuously update the circle’s target color based on the image beneath
+      circle.targetColor = getCachedColor(screamImg, int(circle.x), int(circle.y));
 
-      // interpolate between current and target colour
+      // Interpolate between current and target color for smooth color transition
       circle.currentColor = lerpColor(circle.currentColor, circle.targetColor, 0.1);
 
       // handle fade in and fade out
@@ -188,28 +185,25 @@ function moveAndDrawCircles(circles, shape, shapeColor, volume, spectrum) {
           circle.opacity = 0; // reset opacity
           circle.fadeIn = true; // start fading in again
           circle.delay = frameCounter + int(random(30, 300)); // set new delay with greater randomness
+
+          // Reset colors after repositioning
           circle.currentColor = getCachedColor(screamImg, int(circle.x), int(circle.y));
-          circle.targetColor = circle.currentColor; // reset colours
+          circle.targetColor = circle.currentColor;
         }
       }
 
-      // adjust circles opacity by applying volume multiplier
+      // Adjust circle opacity by applying volume multiplier
       let finalOpacity = circle.opacity * volumeMultiplier;
-      finalOpacity = constrain(finalOpacity, 0, 255); // Ensure opacity is within valid range for rgb
+      finalOpacity = constrain(finalOpacity, 0, 255); // Ensure opacity is within valid range for RGB
 
-
-      // apply scale factor to circle size
+      // Apply scale factor to circle size
       let scaleFactor = height / 812;
-      if (circle.currentColor && circle.targetColor) {
-        // Safely interpolate between current and target colour
-        circle.currentColor = lerpColor(circle.currentColor, circle.targetColor, 0.1);
-      }
       
-      // Use baseColour with added values for fill
+      // Use baseColor with added values for fill
       fill(
-        constrain(red(circle.baseColor) + cumulativeRed, 0, 255),
-        constrain(green(circle.baseColor) + cumulativeGreen, 0, 255),
-        constrain(blue(circle.baseColor) + cumulativeBlue, 0, 255),
+        constrain(red(circle.currentColor) + cumulativeRed, 0, 255),
+        constrain(green(circle.currentColor) + cumulativeGreen, 0, 255),
+        constrain(blue(circle.currentColor) + cumulativeBlue, 0, 255),
         finalOpacity
       );
       noStroke();
@@ -227,6 +221,7 @@ function moveAndDrawCircles(circles, shape, shapeColor, volume, spectrum) {
     }
   }
 }
+
 
 // gets colour from cached pixel data
 function getCachedColor(image, x, y) {
