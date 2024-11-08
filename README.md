@@ -7,6 +7,9 @@ The project is an animated, audio-visual piece inspired by Edvard Munch’s *The
 **Removed Mirroring**
 - Removed the mirroring effect to enhance the feeling of isolation.
 
+**Fixed Resizing Issues**
+Removed issues with resizing from the group project
+
 **Integrated Audio**
    - Loaded an mp3 file and added variables to control volume and frequency.
    - Included a text prompt instructing the user to click if music is not playing, due to browser restrictions on autoplaying audio.

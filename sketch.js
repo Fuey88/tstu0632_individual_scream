@@ -200,9 +200,9 @@ function moveAndDrawCircles(circles, shape, shapeColor, volume, spectrum) {
       let scaleFactor = height / 812;
       
       // adjust cumulativeRed for skyCircles to alter red effect
-      let redValue = circles === skyCircles ? 0.3 * cumulativeRed : cumulativeRed; // check if current array is sky, then assign new red value
+      let redValue = circles === skyCircles ? 0.5 * cumulativeRed : cumulativeRed; // check if current array is sky, then assign new red value
       // adjust green and blue values specifically for skyCircles
-      let greenValue = circles === skyCircles ? cumulativeGreen * 1: cumulativeGreen;
+      let greenValue = circles === skyCircles ? cumulativeGreen * 1.3: cumulativeGreen;
       let blueValue = circles === skyCircles ? cumulativeBlue * 0.8 : cumulativeBlue;
 
       // Use baseColor with added values for fill
